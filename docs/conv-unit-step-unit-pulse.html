@@ -153,7 +153,7 @@ function updatePlots(t) {
   Plotly.newPlot("plot4", [
       {x: tvals, y: convData, mode:'lines', name:"(f*g)(t)", line:{color:'red'}},
     {x:[t,t], y:[-0.5,1.5], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.5,1.5]}});
+  ], {margin:{t:20}, xaxis:{range:[-5,5]}, yaxis:{range:[-0.5,1.5]}});
 }
 
 // Initialize
