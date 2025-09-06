@@ -1,0 +1,9 @@
+# -*- coding: utf-8 -*-
+# -*- mode: org -*-
+#+startup: overview indent
+
+#+title: README.org
+
+* Introduction
+
+This is a repository for some HTML math demos I'm making.
