@@ -48,9 +48,10 @@
 </head>
 <body>
 
-<h2>Convolution: Unit Step and Unit Step</h2>
+<h2>Convolution: Unit Step and Rectangular Pulse</h2>
 
-<p>We illustrate convolution using the unit step function $u(t)$ with itself.  Here, $f(t) = u(t)$ and $g(t) = u(t)$.</p>
+<p>We illustrate convolution using the unit step function $u(t)$ and a rectangular pulse.  
+Here, $f(t) = u(t)$ and $g(t) = u(t) - u(t-1)$.</p>
 
 <p>The convolution integral is
   $$(f*g)(t) = \int_{-\infty}^{\infty} f(\tau)\, g(t-\tau)\, d\tau,$$
@@ -71,8 +72,8 @@
 
 <div class="grid">
   <div>
-    <h3>1. The functions $f(\tau)$ and $g(\tau)$</h3>
-    <p>Here, $f(t) = u(t)$ and $g(t) = u(t)$.</p>
+    <h3>1. The functions $f(t)$ and $g(t)$</h3>
+    <p>Here, $f(t) = u(t)$ and $g(t) = u(t) - u(t-1)$.</p>
     <div id="plot1" class="plot"></div>
   </div>
 
@@ -83,7 +84,7 @@
 
     <div class="control">
       <label for="tSlider">$t$:</label>
-      <input type="range" id="tSlider" min="-5" max="5" step="0.1" value="0">
+      <input type="range" id="tSlider" min="-5" max="10" step="0.1" value="0">
       <span id="tValue">0</span>
     </div>
 
@@ -108,29 +109,37 @@ function H(x) { return (x >= 0 ? 1 : 0); }
 
 // Tau axis and t-values
 const tau = Array.from({length: 1001}, (_, i) => -5 + i*0.01);
-const tvals = Array.from({length: 1001}, (_, i) => -5 + i*0.01);
+const tvals = Array.from({length: 1501}, (_, i) => -5 + i*0.01);
 
-// Convolution (f*g)(t) for unit steps
+// g(t) = u(t) - u(t-1)
+function g_of(x) {
+  return H(x) - H(x-1);
+}
+
+// Convolution (f*g)(t) with f(t)=u(t), g(t)=u(t)-u(t-1)
 function convVal(t) {
   if (t < 0) return 0;
-  return t;
+  if (t >= 0 && t < 1) return t;
+  return 1;
 }
 const convData = tvals.map(t => convVal(t));
 
 function updatePlots(t) {
-  const f = tau.map(x => H(x));
-  const gShifted = tau.map(x => H(-x+t));
-  const prod = tau.map((x,i) => f[i]*gShifted[i]);
+  const f_tau = tau.map(x => H(x));
+  const gShifted = tau.map(x => g_of(-x+t));
+  const prod = tau.map((x,i) => f_tau[i]*gShifted[i]);
+  const f_t = tvals.map(x => H(x)); // f(t)
+  const g_t = tvals.map(x => g_of(x)); // g(t)
 
-  // Plot 1: f(τ) and g(τ)
+  // Plot 1: f(t) and g(t)
   Plotly.newPlot("plot1", [
-    {x: tau, y: f, mode: 'lines', name: "f(t)", line: {color:'blue'}},
-    {x: tau, y: tau.map(x => H(x)), mode: 'lines', name: "g(t)", line: {color:'red', dash:'dash'}}
+    {x: tvals, y: f_t, mode: 'lines', name: "f(t) = u(t)", line: {color:'blue'}},
+    {x: tvals, y: g_t, mode: 'lines', name: "g(t) = u(t)-u(t-1)", line: {color:'red', dash:'dash'}}
   ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}});
 
   // Plot 2: f(τ) and g(-τ+t)
   Plotly.newPlot("plot2", [
-    {x: tau, y: f, mode: 'lines', name: "f(τ)", line: {color:'blue'}},
+    {x: tau, y: f_tau, mode: 'lines', name: "f(τ)", line: {color:'blue'}},
     {x: tau, y: gShifted, mode: 'lines', name: "g(-τ+t)", line: {color:'red'}},
     {x: [t,t], y:[-0.25,1.25], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
   ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}});
@@ -143,8 +152,8 @@ function updatePlots(t) {
   // Plot 4: convolution
   Plotly.newPlot("plot4", [
       {x: tvals, y: convData, mode:'lines', name:"(f*g)(t)", line:{color:'red'}},
-    {x:[t,t], y:[-0.5,5], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.5,5]}});
+    {x:[t,t], y:[-0.5,1.5], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.5,1.5]}});
 }
 
 // Initialize
@@ -153,6 +162,9 @@ updatePlots(t);
 
 // Slider handler
 const slider = document.getElementById("tSlider");
+  slider.min = -5;
+  slider.max = 5;
+  
 const tLabel = document.getElementById("tValue");
 slider.addEventListener("input", function() {
   t = parseFloat(this.value);
