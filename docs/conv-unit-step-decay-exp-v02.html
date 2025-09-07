@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <title>Convolution Visualization</title>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  https://cdn.plot.ly/plotly-latest.min.js</script>
   <!-- Load MathJax for LaTeX rendering -->
   <script>
     window.MathJax = {
       tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}
     };
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js</script>
   <style>
     body {
       font-family: sans-serif;
@@ -48,9 +48,10 @@
 </head>
 <body>
 
-<h2>Convolution: Unit Step and Unit Step</h2>
+<h2>Convolution: Unit Step and Exponential Decay</h2>
 
-<p>We illustrate convolution using the unit step function $u(t)$ with itself.  Here, $f(t) = u(t)$ and $g(t) = u(t)$.</p>
+<p>We illustrate convolution using the unit step function $u(t)$ and an exponentially decaying function.  
+Here, $f(t) = u(t)$ and $g(t) = u(t) e^{-t}$.</p>
 
 <p>The convolution integral is
   $$(f*g)(t) = \int_{-\infty}^{\infty} f(\tau)\, g(t-\tau)\, d\tau,$$
@@ -68,11 +69,10 @@
   <li>Show the value of the convolution integral at times $t$.</li>
 </ol>
 
-
 <div class="grid">
   <div>
-    <h3>1. The functions $f(\tau)$ and $g(\tau)$</h3>
-    <p>Here, $f(t) = u(t)$ and $g(t) = u(t)$.</p>
+    <h3>1. The functions $f(t)$ and $g(t)$</h3>
+    <p>Here, $f(t) = u(t)$ and $g(t) = u(t) e^{-t}$.</p>
     <div id="plot1" class="plot"></div>
   </div>
 
@@ -81,13 +81,11 @@
     <p>We compare $f(\tau)$ and $g(-\tau+t)$ as $t$ varies.</p>
     <div id="plot2" class="plot"></div>
 
-    Drag this slider to set a specific time $t$.
     <div class="control">
       <label for="tSlider">$t$:</label>
-      <input type="range" id="tSlider" min="-5" max="5" step="0.1" value="0">
+      <input type="range" id="tSlider" min="-5" max="10" step="0.1" value="0">
       <span id="tValue">0</span>
     </div>
-
   </div>
 
   <div>
@@ -109,43 +107,64 @@ function H(x) { return (x >= 0 ? 1 : 0); }
 
 // Tau axis and t-values
 const tau = Array.from({length: 1001}, (_, i) => -5 + i*0.01);
-const tvals = Array.from({length: 1001}, (_, i) => -5 + i*0.01);
+const tvals = Array.from({length: 1501}, (_, i) => -5 + i*0.01);
 
-// Convolution (f*g)(t) for unit steps
-function convVal(t) {
-  if (t < 0) return 0;
-  return t;
+// g(t) = u(t) * exp(-t)
+function g_of(x) {
+  return H(x) * Math.exp(-x);
 }
-const convData = tvals.map(t => convVal(t));
+
+// Numerical convolution of f(τ) = u(τ) and g(τ) = u(τ) * exp(-τ)
+function computeConvolution(f, g, dt) {
+  const N = f.length;
+  const result = new Array(N).fill(0);
+  for (let t = 0; t < N; t++) {
+    let sum = 0;
+    for (let tau = 0; tau < N; tau++) {
+      const idx = t - tau;
+      if (idx >= 0 && idx < N) {
+        sum += f[tau] * g[idx];
+      }
+    }
+    result[t] = sum * dt;
+  }
+  return result;
+}
+
+// Precompute f(t), g(t), and convolution
+const f_t = tvals.map(x => H(x));
+const g_t = tvals.map(x => g_of(x));
+const dt = tvals[1] - tvals[0];
+const convData = computeConvolution(f_t, g_t, dt);
 
 function updatePlots(t) {
-  const f = tau.map(x => H(x));
-  const gShifted = tau.map(x => H(-x+t));
-  const prod = tau.map((x,i) => f[i]*gShifted[i]);
+  const f_tau = tau.map(x => H(x));
+  const gShifted = tau.map(x => g_of(-x + t));
+  const prod = tau.map((x, i) => f_tau[i] * gShifted[i]);
 
-  // Plot 1: f(τ) and g(τ)
+  // Plot 1: f(t) and g(t)
   Plotly.newPlot("plot1", [
-    {x: tau, y: f, mode: 'lines', name: "f(t)", line: {color:'blue'}},
-    {x: tau, y: tau.map(x => H(x)), mode: 'lines', name: "g(t)", line: {color:'red', dash:'dash'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}});
+    {x: tvals, y: f_t, mode: 'lines', name: "f(t) = u(t)", line: {color:'blue'}},
+    {x: tvals, y: g_t, mode: 'lines', name: "g(t) = u(t)·e^{-t}", line: {color:'red', dash:'dash'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25, 1.25]}});
 
   // Plot 2: f(τ) and g(-τ+t)
   Plotly.newPlot("plot2", [
-    {x: tau, y: f, mode: 'lines', name: "f(τ)", line: {color:'blue'}},
+    {x: tau, y: f_tau, mode: 'lines', name: "f(τ)", line: {color:'blue'}},
     {x: tau, y: gShifted, mode: 'lines', name: "g(-τ+t)", line: {color:'red'}},
-    {x: [t,t], y:[-0.25,1.25], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}});
+    {x: [t, t], y: [-0.25, 1.25], mode: 'lines', name: "t", line: {color:'black', dash:'dash'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25, 1.25]}});
 
   // Plot 3: product
   Plotly.newPlot("plot3", [
-    {x: tau, y: prod, mode: 'lines', name:"f(τ)g(-τ+t)", line:{color:'green'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}});
+    {x: tau, y: prod, mode: 'lines', name: "f(τ)g(-τ+t)", line: {color:'green'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25, 1.25]}});
 
   // Plot 4: convolution
   Plotly.newPlot("plot4", [
-      {x: tvals, y: convData, mode:'lines', name:"(f*g)(t)", line:{color:'red'}},
-    {x:[t,t], y:[-0.5,5], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
-  ], {margin:{t:20}, yaxis:{range:[-0.5,5]}});
+    {x: tvals, y: convData, mode: 'lines', name: "(f*g)(t)", line: {color:'red'}},
+    {x: [t, t], y: [-0.5, 1.5], mode: 'lines', name: "t", line: {color:'black', dash:'dash'}}
+  ], {margin:{t:20}, xaxis:{range:[-5, 5]}, yaxis:{range:[-0.5, 1.5]}});
 }
 
 // Initialize
