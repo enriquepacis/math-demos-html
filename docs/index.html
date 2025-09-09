@@ -12,25 +12,48 @@
     h1 {
       color: #333;
     }
-    a {
-      display: inline-block;
-      margin-top: 20px;
+    label, select {
       font-size: 18px;
-      color: #0066cc;
-      text-decoration: none;
+      margin-right: 10px;
     }
-    a:hover {
-      text-decoration: underline;
+    iframe {
+      display: block;
+      margin-top: 20px;
+      width: 100%;
+      height: 1200px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
     }
   </style>
 </head>
 <body>
   <h1>Interactive Visualization Demos</h1>
-  <p>Welcome! Choose a demo below:</p>
-  <ul>
-    <li><a href="conv-unit-step-unit-step.html">Convolution: Unit Step and Unit Step</a></li>
-    <li><a href="conv-unit-step-unit-pulse.html">Convolution: Unit Step and Unit Pulse</a></li>
-    <li><a href="conv-unit-step-decay-exp.html">Convolution: Unit Step and Decaying Exponential</a></li>
-  </ul>
+  <p>Choose a demo from the menu below:</p>
+
+  <label for="demoSelect">Select Demo:</label>
+  <select id="demoSelect">
+    <option value="conv-unit-step-unit-step.html" selected>Convolution: Unit Step and Unit Step</option>
+    <option value="conv-unit-step-unit-pulse.html">Convolution: Unit Step and Unit Pulse</option>
+    <option value="conv-unit-step-decay-exp.html">Convolution: Unit Step and Decaying Exponential</option>
+    <option value="conv-unit-pulse-unit-pulse.html">Convolution: Unit Pulse and Unit Pulse</option>
+  </select>
+
+   <!-- iframe starts blank -->
+  <iframe id="demoFrame"></iframe>
+
+  <script>
+    const demoSelect = document.getElementById("demoSelect");
+    const demoFrame = document.getElementById("demoFrame");
+
+    function loadDemo() {
+      demoFrame.src = demoSelect.value;
+    }
+
+    demoSelect.addEventListener("change", loadDemo);
+
+    // Force first demo to load immediately on page load
+    window.addEventListener("DOMContentLoaded", loadDemo);
+  </script>
+  
 </body>
 </html>

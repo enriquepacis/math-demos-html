@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Convolution Visualization</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <!-- Load MathJax for LaTeX rendering -->
+  <script>
+    window.MathJax = {
+      tex: {inlineMath: [['$', '$'], ['\\(', '\\)']]}
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 20px;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      max-width: 1500px;
+    }
+    .plot {
+      width: 100%;
+      height: 350px;
+    }
+    .control {
+      margin-top: 20px;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    input[type=range] {
+      width: 400px;
+      vertical-align: middle;
+    }
+    #tValue {
+      font-weight: bold;
+      margin-left: 8px;
+    }
+    h3 {
+      margin-bottom: 5px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+<h2>Convolution: Two Unit Rectangular Pulses</h2>
+
+<p>We illustrate convolution using two unit rectangular pulses.  
+Here, $f(t) = u(t) - u(t-1)$ and $g(t) = u(t) - u(t-1)$.</p>
+
+<p>The convolution integral is
+  $$(f*g)(t) = \int_{-\infty}^{\infty} f(\tau)\, g(t-\tau)\, d\tau,$$
+  so we demonstrate this in four steps:</p>
+
+<ol>
+  <li>Show the two functions to be convolved, $f(t)$ and $g(t)$.</li>
+  <li>Show the functions in the $\tau$-domain:
+    <ol>
+      <li>The function $f(\tau)$</li>
+      <li>The $\tau$-reversed and $t$-shifted $g(t-\tau)$ for a specific value of $t$.</li>
+    </ol>
+  </li>
+  <li>Show the product $f(\tau) g(t - \tau)$, whose area is the value of the convolution integral at $t$.</li>
+  <li>Show the value of the convolution integral at times $t$.</li>
+</ol>
+
+
+<div class="grid">
+  <div>
+    <h3>1. The functions $f(t)$ and $g(t)$</h3>
+    <p>Here, $f(t) = g(t) = u(t) - u(t-1)$.</p>
+    <div id="plot1" class="plot"></div>
+  </div>
+
+  <div>
+    <h3>2. The shifted/reversed function $g(-\tau + t)$</h3>
+    <p>We compare $f(\tau)$ and $g(-\tau+t)$ as $t$ varies.</p>
+    <div id="plot2" class="plot"></div>
+
+    <p>Drag this slider to set a specific value of \(t\).</p>
+    <div class="control">
+      <label for="tSlider">$t$:</label>
+      <input type="range" id="tSlider" min="-1" max="3" step="0.1" value="0">
+      <span id="tValue">0</span>
+    </div>
+
+  </div>
+
+  <div>
+    <h3>3. The product $f(\tau) g(-\tau+t)$</h3>
+    <p>This shows the overlap of $f(\tau)$ and $g(t-\tau)$ for the specific value of $t$.</p>
+    <div id="plot3" class="plot"></div>
+  </div>
+
+  <div>
+    <h3>4. The convolution result $(f*g)(t)$</h3>
+    <p>The convolution at time $t$ is the area under the curve $f(\tau)g(t-\tau)$.</p>
+    <div id="plot4" class="plot"></div>
+  </div>
+</div>
+
+<script>
+// Heaviside step
+function H(x) { return (x >= 0 ? 1 : 0); }
+
+// Tau axis and t-values
+const tau = Array.from({length: 1001}, (_, i) => -1 + i*0.01);  // focus window [-1, 3]
+const tvals = Array.from({length: 401}, (_, i) => -1 + i*0.01);
+
+// Rectangular pulse: u(t) - u(t-1)
+function rect(x) {
+  return H(x) - H(x-1);
+}
+
+// Convolution (f*g)(t) = triangle
+function convVal(t) {
+  if (t < 0) return 0;
+  if (t < 1) return t;
+  if (t < 2) return 2 - t;
+  return 0;
+}
+const convData = tvals.map(t => convVal(t));
+
+function updatePlots(t) {
+  const f_tau = tau.map(x => rect(x));
+  const gShifted = tau.map(x => rect(-x+t));
+  const prod = tau.map((x,i) => f_tau[i]*gShifted[i]);
+  const f_t = tvals.map(x => rect(x)); // f(t)
+  const g_t = tvals.map(x => rect(x)); // g(t)
+
+  // Plot 1: f(t) and g(t)
+  Plotly.newPlot("plot1", [
+    {x: tvals, y: f_t, mode: 'lines', name: "f(t)", line: {color:'blue'}},
+    {x: tvals, y: g_t, mode: 'lines', name: "g(t)", line: {color:'red', dash:'dash'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}, xaxis:{range:[-1,3]}});
+
+  // Plot 2: f(τ) and g(-τ+t)
+  Plotly.newPlot("plot2", [
+    {x: tau, y: f_tau, mode: 'lines', name: "f(τ)", line: {color:'blue'}},
+    {x: tau, y: gShifted, mode: 'lines', name: "g(-τ+t)", line: {color:'red'}},
+    {x: [t,t], y:[-0.25,1.25], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}, xaxis:{range:[-1,3]}});
+
+  // Plot 3: product
+  Plotly.newPlot("plot3", [
+    {x: tau, y: prod, mode: 'lines', name:"f(τ)g(-τ+t)", line:{color:'green'}}
+  ], {margin:{t:20}, yaxis:{range:[-0.25,1.25]}, xaxis:{range:[-1,3]}});
+
+  // Plot 4: convolution
+  Plotly.newPlot("plot4", [
+      {x: tvals, y: convData, mode:'lines', name:"(f*g)(t)", line:{color:'red'}},
+    {x:[t,t], y:[-0.5,1.5], mode:'lines', name:"t", line:{color:'black', dash:'dash'}}
+  ], {margin:{t:20}, xaxis:{range:[-1,3]}, yaxis:{range:[-0.5,1.5]}});
+}
+
+// Initialize
+let t = 0;
+updatePlots(t);
+
+// Slider handler
+const slider = document.getElementById("tSlider");
+const tLabel = document.getElementById("tValue");
+slider.addEventListener("input", function() {
+  t = parseFloat(this.value);
+  tLabel.textContent = t.toFixed(2);
+  updatePlots(t);
+});
+</script>
+
+</body>
+</html>
